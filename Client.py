@@ -8,7 +8,7 @@ from pyglet.window import mouse
 def createConnection():
     name = input('Enter your name\n')
 
-    HOST = '192.168.1.98'
+    HOST = 'x.x.x.x'
     PORT = 50007
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s.connect((HOST,PORT))
