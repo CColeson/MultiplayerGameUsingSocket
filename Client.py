@@ -1,78 +1,72 @@
 import socket
 import pyglet
-from GameObjects.Player import Player
+from GameObjects.Player import MyPlayer
+from GameObjects import GameObject
 from pyglet.window import key
 from pyglet.window import mouse
+import pickle
+import random
 
+def connect():
+    name = input('Enter your name: a unique one may be assigned\n')
 
-def createConnection():
-    name = input('Enter your name\n')
-
-    HOST = 'x.x.x.x'
-    PORT = 50007
-    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s = socket.socket()
     s.connect((HOST,PORT))
-    s.send(bytes((name+' WANTS TO CONNECT').encode()))
+    s.send(('00 '+name).encode())
 
-    accepted = 0
-    while accepted == 0:
-        r = s.recv(1024).decode()
-        if r == 'ACCEPTED':
-            accepted = 1
-        if r == 'REFUSED':
-            accepted = -1
-            
-        r = None
+    name = s.recv(1024).decode()
+    if name[0:2] == '00':
+        name = name[3:]
+        print('Connected Successfully as %s!'%name)
+    else:
+        input('Something went wrong, press "enter" to try again')
+        s,name = connect()
 
-    if accepted == -1:
-        input("Please choose a different name and try again")
-        exit()
+    return s,name
 
-    print("Connected Successfully")
-
-    return name,s
-
-def updateDrawList(recieved):
-    global drawList
-    recieved = recieved.split('\n')
-    for i in recieved:
-        i = i[3:].split()
-        if len(i) != 0 and i[0] != name:
-            if i[0] in drawList:
-                drawList[i[0]].x = int(i[1])
-                drawList[i[0]].y = int(i[2])
-            else:
-                drawList[i[0]] = Player(int(i[1]),int(i[2]),'GameObjects/Player/player.png',i[0],keys)
-
+if __name__ == '__main__':
     
-if __name__ == "__main__":
-    
-    name,s = createConnection()
+    HOST = '192.168.1.98'
+    PORT = 50007
+    s,name = connect()
 
     window = pyglet.window.Window(height=1000,width=1000)
     keys = key.KeyStateHandler()
     window.push_handlers(keys)
-    
-    drawList = {}
-    drawList[name] = Player(0,0,'GameObjects/Player/player.png',name,keys)
-    myPlayer = drawList[name]
-    
 
+    player = MyPlayer(name,random.randrange(1000),random.randrange(1000),keys)
+    #s.send(('01 %s %s %s %s'%(player.name,player.x,player.y,player.imagePath)).encode())
+
+    drawObjects = {}
+    
     def update(time):
-        global drawList
         window.clear()
 
-        rec = str(s.recv(1024).decode('utf-8'))
+        msg = s.recv(1024).decode()
+        if msg[0:2] == '01':
+            msg = msg[3:]
+            obs = msg.split('\n')
+            for o in obs:
+                o = o.split()
+                if len(o) == 0: continue
+                if o[0] not in drawObjects:
+                    drawObjects[o[0]] = GameObject(o[0],int(o[1]),int(o[2]),o[3],drawLabels=True)
+                else:
+                    obj = drawObjects[o[0]]
+                    obj.x = int(o[1])
+                    obj.y = int(o[2])
+                    obj.imagePath = o[3]
+                
+                
+        player.drawSelf()
+        
+        for i in drawObjects:
+            if drawObjects[i].name != player.name:
+                drawObjects[i].drawSelf()
 
-        if rec[0:2] =='01':
-           updateDrawList(rec)
-                        
-        for i in drawList:
-            drawList[i].drawSelf()
-        s.send(('02 %s %s %s'%(myPlayer.name,myPlayer.x,myPlayer.y)).encode())
-            
+        msg = ('01 %s %s %s %s'%(player.name,player.x,player.y,player.imagePath)).encode()
+        s.send(msg)
+
     pyglet.clock.schedule_interval(update,1/60)#1/60
     pyglet.app.run()
     s.close()
-        
-    
