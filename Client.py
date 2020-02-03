@@ -94,7 +94,7 @@ if __name__ == '__main__':
     
     
     
-    HOST = '104.49.191.192'
+    HOST = ''
     PORT = 50007
     s,name = connect()
 
