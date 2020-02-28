@@ -9,8 +9,11 @@ import pickle
 import random
 
 def connect():
-    name = input('Enter your name: a unique one may be assigned\n')
-
+    n = input('Enter your name: a unique one may be assigned, \ninvalid characters will be removed.\n')
+    n = n.split(' ')
+    name = ''
+    for i in n:
+        name += i
     s = socket.socket()
     s.connect((HOST,PORT))
     s.send(('00 '+name).encode())
@@ -94,7 +97,7 @@ if __name__ == '__main__':
     
     
     
-    HOST = ''
+    HOST = '104.49.191.192'
     PORT = 50007
     s,name = connect()
 
